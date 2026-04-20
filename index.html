@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SodsBC — Post-Quantum Blockchain for Financial Settlement</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#000028;--card:#0A0A38;--glass:rgba(232,240,248,.04);--accent:#E8F0F8;--accent2:#A0A858;--teal:#A0A858;--red:#E85B4A;--gold:#A0A858;--green:#A0A858;--pink:#A0A858;--text:#E8F0F8;--muted:#8090B0;--bdr:rgba(232,240,248,.14);--font:'DM Sans',sans-serif;--serif:'DM Serif Display','Playfair Display',Georgia,serif;--mono:'JetBrains Mono',monospace}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text)}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:none}
+.slide{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:2rem 2rem 3rem;opacity:0;pointer-events:none;transition:opacity .5s}
+.slide.active{opacity:1;pointer-events:auto}
+.si{max-width:960px;width:100%;height:100%;display:flex;flex-direction:column}
+.tb{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-shrink:0}
+.br{font-family:var(--serif);font-weight:400;font-size:1rem;color:var(--accent2);letter-spacing:-.01em}
+.sl{font-family:var(--mono);font-size:.48rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--bg);background:var(--accent2);padding:.25rem .6rem;border-radius:1px}
+h1{font-family:var(--serif);font-size:clamp(2rem,4.5vw,3rem);font-weight:400;line-height:1.05;letter-spacing:-.015em;color:var(--text);margin-bottom:.5rem}
+h2{font-family:var(--serif);font-size:clamp(1.2rem,2.6vw,1.55rem);font-weight:400;line-height:1.18;color:var(--text);margin-bottom:.3rem;letter-spacing:-.005em}
+.sub{color:var(--muted);font-size:.78rem;line-height:1.5;max-width:600px}
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.85rem .95rem}
+.badge{display:inline-block;padding:.15rem .4rem;border-radius:3px;font-size:.5rem;font-weight:600}
+.stat-row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0}
+.stat{background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.55rem .65rem;text-align:center;flex:1;min-width:100px;transition:all .15s}
+.stat:hover{border-color:var(--accent2)}
+.stat .v{font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--text);letter-spacing:-.03em}
+.stat .l{font-family:var(--mono);font-size:.48rem;color:var(--muted);margin-top:.15rem;text-transform:uppercase;letter-spacing:.12em;font-weight:500}
+.prim-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin:.4rem 0}
+.prim{background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.7rem .55rem;text-align:center;position:relative;overflow:hidden}
+.prim::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent2)}
+.prim .name{font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.prim .std{font-family:var(--mono);font-size:.48rem;color:var(--muted);margin-top:.2rem;text-transform:uppercase;letter-spacing:.1em;font-weight:500}
+.prim .role{font-family:var(--mono);font-size:.52rem;color:var(--accent2);font-weight:700;margin-top:.1rem;letter-spacing:.14em;text-transform:uppercase}
+.alert{background:var(--card);border:1px solid var(--bdr);border-left:4px solid var(--accent2);border-radius:2px;padding:.85rem 1rem}
+.cols{display:flex;gap:.6rem;flex-wrap:wrap}
+.cols>div{flex:1;min-width:220px}
+.fp{flex:1;background:rgba(26,82,118,.02);border:1px solid var(--bdr);border-radius:7px;padding:.4rem .6rem;overflow-y:auto;min-height:0;margin-top:.4rem}
+.fs{display:flex;gap:.35rem;padding:.18rem 0;border-bottom:1px solid rgba(0,0,0,.03);font-size:.58rem;align-items:start;opacity:0;animation:fi .3s ease forwards}
+@keyframes fi{to{opacity:1}}
+.fs .t{font-family:var(--mono);color:var(--muted);min-width:32px;font-size:.48rem}
+.fs .i{font-size:.58rem;min-width:14px}
+.fs .m{color:var(--text);line-height:1.3}
+.fs .m code{font-family:var(--mono);font-size:.5rem;background:rgba(26,82,118,.06);padding:.03rem .2rem;border-radius:2px;color:var(--accent)}
+.pb{position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(0,0,40,.95);border-top:1px solid var(--bdr);padding:.4rem 1rem;display:flex;align-items:center;justify-content:center;gap:.7rem;backdrop-filter:blur(12px)}
+.pb button{background:none;border:1px solid var(--bdr);color:var(--text);width:26px;height:26px;border-radius:50%;font-size:.58rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pb button:hover,.pb button.on{background:var(--accent2);color:var(--bg);border-color:var(--accent2)}
+.pb .ds{display:flex;gap:5px;align-items:center}
+.pb .dd{width:8px;height:8px;border-radius:50%;background:rgba(232,240,248,.18);cursor:pointer;transition:all .2s}
+.pb .dd.a{background:var(--accent2);transform:scale(1.3)}
+.pb .dd.dn{background:var(--text);opacity:.5}
+.pb .inf{font-family:var(--mono);font-size:.52rem;color:var(--muted);min-width:60px;font-weight:500}
+.vi{position:fixed;top:.6rem;right:.6rem;z-index:200;display:flex;align-items:center;gap:.3rem;background:rgba(244,246,250,.95);padding:.18rem .45rem;border-radius:100px;font-size:.44rem;color:var(--muted);opacity:0;transition:opacity .3s;border:1px solid var(--bdr)}
+.vi.on{opacity:1;color:var(--accent)}
+.vi .bs{display:flex;gap:1.5px;align-items:center;height:7px}
+.vi .b{width:1.5px;background:var(--accent);border-radius:1px;animation:vb .6s ease infinite}
+.vi .b:nth-child(1){height:2px}.vi .b:nth-child(2){height:4px;animation-delay:.1s}.vi .b:nth-child(3){height:7px;animation-delay:.2s}.vi .b:nth-child(4){height:3px;animation-delay:.3s}
+@keyframes vb{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+/* Network effects flywheel */
+.fw-wrap{display:grid;grid-template-columns:260px 1fr;gap:.8rem;margin-top:.5rem;align-items:start}
+.fw-svg{display:flex;align-items:flex-start;justify-content:center;padding-top:.2rem}
+.fw-txt{display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.fw-step{background:var(--card);border:1px solid var(--bdr);border-left:3px solid var(--accent2);border-radius:2px;padding:.55rem .7rem;opacity:0;animation:fwIn .5s ease forwards}
+.fw-step:nth-child(1){animation-delay:.2s;border-left-color:var(--accent2)}
+.fw-step:nth-child(2){animation-delay:.8s;border-left-color:var(--text)}
+.fw-step:nth-child(3){animation-delay:1.4s;border-left-color:var(--accent2)}
+.fw-step:nth-child(4){animation-delay:2.0s;border-left-color:var(--text)}
+.fw-step .l{font-family:var(--mono);font-size:.52rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+.fw-step:nth-child(2) .l{color:var(--text)}
+.fw-step:nth-child(3) .l{color:var(--accent2)}
+.fw-step:nth-child(4) .l{color:var(--text)}
+.fw-step .t{font-size:.68rem;color:var(--text);line-height:1.5;margin-top:.25rem}
+@keyframes fwIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.fw-node{transform-origin:center;animation:nodePulse 2.4s ease-in-out infinite}
+.fw-node:nth-of-type(2){animation-delay:.3s}
+.fw-node:nth-of-type(3){animation-delay:.6s}
+.fw-node:nth-of-type(4){animation-delay:.9s}
+.fw-node:nth-of-type(5){animation-delay:1.2s}
+.fw-node:nth-of-type(6){animation-delay:1.5s}
+@keyframes nodePulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.1);opacity:1}}
+.fw-arc{fill:none;stroke:var(--accent);stroke-width:1.2;stroke-dasharray:4 3;opacity:.5;animation:arcSpin 20s linear infinite}
+@keyframes arcSpin{from{stroke-dashoffset:0}to{stroke-dashoffset:-120}}
+/* Competitive matrix */
+.cm{width:100%;border-collapse:collapse;font-size:.62rem;margin-top:.4rem;background:var(--card);border-radius:2px;overflow:hidden;border:1px solid var(--bdr)}
+.cm th{background:rgba(160,168,88,.12);color:var(--accent2);font-family:var(--mono);font-weight:700;padding:.55rem .5rem;text-align:left;font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--bdr)}
+.cm td{padding:.45rem .5rem;border-bottom:1px solid rgba(232,240,248,.06);color:var(--text);vertical-align:middle}
+.cm tr:last-child td{border-bottom:none}
+.cm tr.sb td{background:rgba(160,168,88,.15);font-weight:700;border-top:2px solid var(--accent2);border-bottom:2px solid var(--accent2)}
+.cm tr.sb td:first-child{color:var(--accent2)}
+.cm .name{font-weight:700;color:var(--text)}
+.cm .sb .name{color:var(--accent2);font-size:.75rem;font-family:var(--serif);font-weight:400;letter-spacing:.01em}
+.cm .chk{color:var(--text);font-weight:700}
+.cm .sb .chk{color:var(--accent2)}
+.cm .x{color:var(--muted);font-weight:600}
+.cm .pt{color:var(--muted);font-weight:500;font-style:italic}
+.cm td.mono{font-family:var(--mono);font-size:.58rem;color:var(--muted)}
+.cm .sb td.mono{color:var(--text)}
+/* Origin story timeline */
+.os-wrap{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.5rem;align-items:stretch}
+.os-card{background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.9rem 1rem;position:relative;overflow:hidden}
+.os-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--text)}
+.os-card.r::before{background:var(--accent2)}
+.os-era{font-family:var(--mono);font-size:.52rem;color:var(--muted);font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin-bottom:.3rem}
+.os-card.r .os-era{color:var(--accent2)}
+.os-h{font-family:var(--serif);font-size:1.1rem;font-weight:400;color:var(--text);letter-spacing:-.005em;margin-bottom:.35rem;line-height:1.15}
+.os-body{font-size:.7rem;line-height:1.55;color:var(--text)}
+.os-body strong{color:var(--accent2);font-weight:600}
+.os-card.r .os-body strong{color:var(--text);font-weight:800}
+.os-arrow{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:1.5rem;color:var(--accent2);font-weight:700;padding:.5rem 0;text-align:center}
+.os-flow{display:grid;grid-template-columns:1fr auto 1fr;gap:.4rem;margin-top:.5rem;align-items:stretch}
+.os-example{margin-top:.5rem;background:var(--card);border:1px solid var(--bdr);border-left:3px solid var(--accent2);border-radius:2px;padding:.8rem .95rem}
+.os-example .lbl{font-family:var(--mono);font-size:.52rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent2);margin-bottom:.3rem}
+.os-example .txt{font-size:.7rem;line-height:1.55;color:var(--text)}
+.os-example .txt em{font-style:normal;color:var(--accent2);font-weight:700}
+/* Validation quote cards */
+.va-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:.6rem;margin-top:.4rem}
+.va-quote{background:var(--card);border:1px solid var(--bdr);border-left:4px solid var(--accent2);border-radius:2px;padding:.8rem 1rem;position:relative}
+.va-quote.pink{border-left-color:var(--accent2)}
+.va-quote.gold{border-left-color:var(--text)}
+.va-quote.green{border-left-color:var(--accent2)}
+.va-quote .qmark{position:absolute;top:-4px;left:.5rem;font-family:var(--serif);font-size:1.9rem;line-height:1;color:var(--accent2);font-weight:400;background:var(--card);padding:0 .3rem}
+.va-text{font-family:var(--serif);font-style:italic;font-size:.82rem;line-height:1.45;color:var(--text);padding-top:.4rem;padding-left:1.5rem}
+.va-quote.gold .va-text,.va-quote.green .va-text{padding-left:0;font-family:var(--font);font-style:normal;font-size:.68rem;line-height:1.5}
+.va-src{font-family:var(--font);font-size:.58rem;color:var(--muted);margin-top:.55rem;font-style:normal;font-weight:500}
+.va-src strong{color:var(--text);font-weight:700}
+.va-logos{display:flex;flex-direction:column;gap:.4rem}
+.va-logo-row{background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.6rem .75rem;display:flex;align-items:center;gap:.55rem}
+.va-logo-icon{width:36px;height:36px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:.72rem;color:var(--bg);flex-shrink:0;background:var(--accent2)}
+.va-logo-body{flex:1;min-width:0}
+.va-logo-name{font-size:.68rem;font-weight:700;color:var(--text);letter-spacing:-.005em}
+.va-logo-desc{font-size:.55rem;color:var(--muted);margin-top:.15rem;line-height:1.45}
+/* Business Model slide */
+.bm-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:.7rem;margin-top:.5rem}
+.bm-col{display:flex;flex-direction:column;gap:.5rem}
+.bm-card{background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.75rem .9rem}
+.bm-card.accent{border-left:3px solid var(--accent2)}
+.bm-label{font-family:var(--mono);font-size:.52rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent2);margin-bottom:.35rem}
+.bm-row{display:flex;justify-content:space-between;align-items:baseline;padding:.22rem 0;border-bottom:1px solid rgba(232,240,248,.06);font-size:.66rem}
+.bm-row:last-child{border-bottom:none}
+.bm-row .k{color:var(--text)}
+.bm-row .v{color:var(--accent2);font-family:var(--mono);font-weight:600}
+.bm-channels{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-top:.3rem}
+.bm-chan{background:rgba(160,168,88,.08);border:1px solid rgba(160,168,88,.2);border-radius:2px;padding:.4rem .35rem;text-align:center}
+.bm-chan .nm{font-family:var(--mono);font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2)}
+.bm-chan .ex{font-size:.5rem;color:var(--muted);margin-top:.25rem;line-height:1.35}
+.bm-ask{background:rgba(160,168,88,.1);border:1px solid rgba(160,168,88,.35);border-radius:2px;padding:.8rem .95rem}
+.bm-ask .hdr{font-family:var(--serif);font-size:1.3rem;color:var(--accent2);line-height:1;margin-bottom:.3rem}
+.bm-ask .sub{font-size:.62rem;color:var(--muted);margin-bottom:.45rem;line-height:1.45}
+.bm-use{font-size:.63rem;line-height:1.6;color:var(--text)}
+.bm-use strong{color:var(--accent2);font-weight:600}
+.bm-team{font-size:.62rem;color:var(--muted);line-height:1.55;margin-top:.4rem;padding-top:.4rem;border-top:1px solid rgba(232,240,248,.08)}
+/* Global Opportunity slide */
+.go-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.5rem}
+.go-col{background:var(--card);border:1px solid var(--bdr);border-top:2px solid var(--accent2);border-radius:2px;padding:.75rem .85rem;display:flex;flex-direction:column}
+.go-label{font-family:var(--mono);font-size:.5rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent2);margin-bottom:.35rem}
+.go-hdr{font-family:var(--serif);font-size:1.05rem;color:var(--text);line-height:1.15;margin-bottom:.4rem}
+.go-stat{font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--accent2);letter-spacing:-.02em;margin:.2rem 0}
+.go-stat .unit{font-size:.65rem;font-weight:500;color:var(--muted);margin-left:.3rem}
+.go-sub{font-size:.62rem;color:var(--text);line-height:1.5;margin-top:.25rem}
+.go-sub strong{color:var(--accent2);font-weight:600}
+.go-sub em{color:var(--muted);font-style:normal}
+.go-footer{margin-top:.4rem;padding-top:.4rem;border-top:1px solid rgba(232,240,248,.08);font-size:.55rem;color:var(--muted);line-height:1.5}
+/* Merged Market+Traction+Ask slide compressed versions */
+.mk-stats{display:flex;gap:.5rem;margin-top:.35rem}
+.mk-stat{flex:1;background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.42rem .55rem;text-align:center}
+.mk-stat .v{font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text)}
+.mk-stat .v.acc{color:var(--accent2)}
+.mk-stat .l{font-family:var(--mono);font-size:.44rem;color:var(--muted);margin-top:.1rem;text-transform:uppercase;letter-spacing:.1em}
+.mk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-top:.45rem}
+.mk-col{background:var(--card);border:1px solid var(--bdr);border-top:2px solid var(--accent2);border-radius:2px;padding:.55rem .65rem}
+.mk-label{font-family:var(--mono);font-size:.46rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:.2rem}
+.mk-hdr{font-family:var(--serif);font-size:.82rem;color:var(--text);line-height:1.12;margin-bottom:.2rem}
+.mk-stat-big{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--accent2);letter-spacing:-.02em;margin:.1rem 0}
+.mk-stat-big .unit{font-size:.5rem;font-weight:500;color:var(--muted);margin-left:.2rem}
+.mk-sub{font-size:.54rem;color:var(--text);line-height:1.45;margin-top:.15rem}
+.mk-sub strong{color:var(--accent2);font-weight:600}
+.mk-foot{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.45rem}
+.mk-foot-card{background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.5rem .65rem}
+.mk-foot-h{font-family:var(--mono);font-size:.48rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:.2rem}
+.mk-foot-row{font-size:.55rem;color:var(--muted);line-height:1.5;padding:.1rem 0;border-bottom:1px solid rgba(232,240,248,.05)}
+.mk-foot-row:last-child{border-bottom:none}
+.mk-foot-row strong{color:var(--text);font-weight:600}
+.mk-foot-row strong.acc{color:var(--accent2)}
+.mk-team{margin-top:.35rem;background:var(--card);border:1px solid var(--bdr);border-radius:2px;padding:.45rem .65rem;text-align:center}
+.mk-team-nm{font-size:.6rem;color:var(--text)}
+.mk-team-nm strong{font-weight:700}
+.mk-team-em{font-size:.52rem;color:var(--accent2);margin-top:.15rem;font-family:var(--mono)}
+/* Footnote superscripts */
+sup.ref{font-family:var(--mono);font-size:.52rem;color:var(--accent2);font-weight:700;padding:0 .12em;letter-spacing:0;vertical-align:super;line-height:0}
+a sup.ref,sup.ref a{color:var(--accent2);text-decoration:none}
+/* References slide */
+.rf-intro{font-size:.72rem;color:var(--muted);line-height:1.5;margin-top:.3rem;max-width:720px}
+.rf-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem .8rem;margin-top:.5rem;font-size:.6rem;line-height:1.45}
+.rf-item{display:grid;grid-template-columns:2.2rem 1fr;gap:.4rem;padding:.35rem 0;border-bottom:1px solid rgba(232,240,248,.06)}
+.rf-num{font-family:var(--mono);font-size:.58rem;font-weight:700;color:var(--accent2);letter-spacing:.05em;padding-top:.05rem}
+.rf-body{color:var(--text)}
+.rf-body .title{font-weight:600;color:var(--text);display:block;margin-bottom:.15rem}
+.rf-body .src{color:var(--muted);font-size:.55rem;word-break:break-word;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="vi" id="vi"><div class="bs"><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div></div><span>Speaking</span></div>
+
+<!-- S0: TITLE -->
+<div class="slide active" id="sl0"><div class="si" style="justify-content:center;align-items:center;text-align:center">
+<div style="font-family:var(--serif);font-size:1.6rem;font-weight:400;color:var(--accent2);margin-bottom:1.25rem;letter-spacing:-.01em">SodsBC</div>
+<h1 style="font-size:clamp(1.7rem,4vw,2.6rem)">Post-Quantum Blockchain<br>for Financial Settlement</h1>
+<p class="sub" style="max-width:560px;margin:.5rem auto 0;text-align:center">The only settlement protocol where every cryptographic primitive is post-quantum by construction. Visa-speed. Ethereum-compatible. Agent-ready.</p>
+<div style="display:flex;gap:.3rem;margin-top:1rem;flex-wrap:wrap;justify-content:center">
+<span class="badge" style="background:rgba(232,240,248,.08);color:var(--text);border:1px solid var(--bdr)">Dilithium Signatures</span>
+<span class="badge" style="background:rgba(160,168,88,.12);color:var(--accent2);border:1px solid rgba(160,168,88,.3)">&gt;100K TPS</span>
+<span class="badge" style="background:rgba(160,168,88,.12);color:var(--accent2);border:1px solid rgba(160,168,88,.3)">x402 Agent-Ready</span>
+<span class="badge" style="background:rgba(232,240,248,.08);color:var(--text);border:1px solid var(--bdr)">FiatBarter Netting</span>
+</div>
+<div style="margin-top:2rem;font-family:var(--mono);font-size:.55rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase">Prof. Shlomi Dolev &middot; Ben-Gurion University &middot; IEEE Fellow &middot; April 2026</div>
+</div></div>
+
+<!-- S1: 2029 DEADLINE -->
+<div class="slide" id="sl1"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">1 &middot; The 2029 Deadline</div></div>
+<div class="alert">
+<h2 style="color:var(--accent2);font-family:var(--serif);font-weight:400">Google and Cloudflare: 2029</h2>
+<p style="font-size:.78rem;color:var(--text);line-height:1.5;margin-top:.3rem">On April 7, 2026, both Google and Cloudflare set <strong style="color:var(--accent2)">2029 as their hard deadline</strong> for full post-quantum migration.<sup class="ref">[1][2]</sup> Google Quantum AI research has lowered the estimated qubit count needed to break ECC &mdash; resource estimates are now well under one million qubits depending on assumptions. Cloudflare: <em>"much sooner than expected."</em><sup class="ref">[2]</sup> NIST deprecates classical algorithms 2030, disallows 2035.<sup class="ref">[4]</sup></p>
+</div>
+<div class="stat-row" style="margin-top:.6rem">
+<div class="stat"><div class="v" style="color:var(--accent2)">2029</div><div class="l">Google + Cloudflare PQ deadline</div></div>
+<div class="stat"><div class="v" style="color:var(--accent2)">2030</div><div class="l">NIST deprecates ECDSA/RSA</div></div>
+<div class="stat"><div class="v" style="color:var(--accent2)">2035</div><div class="l">NIST disallows classical</div></div>
+<div class="stat"><div class="v" style="color:var(--accent2)">5-12yr</div><div class="l">enterprise migration time</div></div>
+</div>
+<div class="card" style="margin-top:.5rem">
+<p style="font-size:.72rem;color:var(--muted);line-height:1.5"><strong style="color:var(--text)">Major bank blockchains run on classical ECDSA that Google has shown is increasingly at risk:</strong> JPM Kinexys, HSBC Digital Vault, Citi Token Services, R3 Corda, Ethereum, every L2. None have shipped production post-quantum consensus. Settlement records must remain unforgeable for decades. Harvest-now-decrypt-later is an established threat model for long-lived settlement data<sup class="ref">[10]</sup> &mdash; encrypted records collected today remain vulnerable to future decryption.</p>
+</div>
+</div></div>
+
+<!-- S2: PQ BY CONSTRUCTION -->
+<div class="slide" id="sl2"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">2 &middot; PQ by Construction</div></div>
+<h2>Post-quantum in every primitive &mdash; not retrofit</h2>
+<p class="sub">Not a PQ wrapper on a classical core. Every cryptographic operation in the consensus is post-quantum from genesis.</p>
+<div class="prim-grid" style="margin-top:.6rem">
+<div class="prim"><div class="role">SIGNATURES</div><div class="name">Dilithium-3</div><div class="std">NIST FIPS 204<sup class="ref">[3]</sup></div></div>
+<div class="prim"><div class="role">ENCRYPTION</div><div class="name">AES-256-CTR</div><div class="std">Block anti-censorship</div></div>
+<div class="prim"><div class="role">HASHING</div><div class="name">SHA3-256</div><div class="std">Merkle trees + chain</div></div>
+<div class="prim"><div class="role">RANDOMNESS</div><div class="name">awVSS Coins</div><div class="std">PQ common random coins</div></div>
+</div>
+<div class="card" style="margin-top:.5rem;border-left:3px solid var(--teal)">
+<p style="font-size:.72rem;color:var(--text);line-height:1.5"><strong style="color:var(--pink)">Zero ECDSA. Zero RSA. Zero classical pairings.</strong> Not just the API layer &mdash; inside the MVBA voting, the RBC erasure coding, the BBA coin-flip, every nested hash proof, every block header, every transaction receipt. The consensus itself is quantum-safe.</p>
+</div>
+<div class="card" style="margin-top:.4rem;border-left:3px solid var(--accent2);background:rgba(160,168,88,.06)">
+<p style="font-size:.66rem;color:var(--text);line-height:1.5"><strong style="color:var(--accent2)">Why AWS/IBM cannot just patch this.</strong> Swapping Dilithium for ECDSA at the signature layer is a weekend library change &mdash; and that's what QANplatform, Algorand, Hedera and Solana are doing. Rebuilding consensus with PQ randomness (awVSS), PQ anti-censorship (AES-256), and PQ MVBA predicates is a 4-year research program. That is what SodsBC is. IEEE TDSC 2024<sup class="ref">[6]</sup> + US patent pending<sup class="ref">[9]</sup> covering both the awVSS common-coin primitive and SodsMPC FSM contracts is the moat.</p>
+</div>
+<div class="stat-row">
+<div class="stat"><div class="v">IEEE</div><div class="l">TDSC 2024 peer-reviewed</div></div>
+<div class="stat"><div class="v">US Patent</div><div class="l">US20230186293A1<sup class="ref">[9]</sup></div></div>
+<div class="stat"><div class="v">Live</div><div class="l">Testnet on Oracle Cloud</div></div>
+</div>
+</div></div>
+
+<!-- S3: PERFORMANCE -->
+<div class="slide" id="sl3"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">3 &middot; Visa-Speed + Async BFT</div></div>
+<h2>&gt;100,000 TPS &mdash; Visa-level, post-quantum, sub-second<sup class="ref">[6]</sup></h2>
+<div class="stat-row" style="margin-top:.5rem">
+<div class="stat"><div class="v" style="font-size:1.3rem">&gt;100,000</div><div class="l">transactions per second</div></div>
+<div class="stat"><div class="v" style="font-size:1.3rem">&lt;0.8s</div><div class="l">time to finality</div></div>
+<div class="stat"><div class="v" style="font-size:1.3rem">$0</div><div class="l">gas fees</div></div>
+<div class="stat"><div class="v" style="font-size:1.3rem">EVM</div><div class="l">Besu &middot; Ethereum-compatible</div></div>
+</div>
+<div class="cols" style="margin-top:.5rem">
+<div class="card" style="border-top:2px solid var(--text)">
+<h2 style="font-size:.8rem;font-family:var(--font);font-weight:700;color:var(--text)">Asynchronous BFT &middot; Permissionless</h2>
+<p style="font-size:.68rem;color:var(--muted);line-height:1.45;margin-top:.2rem">Zero timing assumptions. Reaches agreement regardless of latency, partition, or adversarial delay. Tolerates f &lt; n/3 Byzantine failures. <strong style="color:var(--text)">Permissionless node participation</strong> &mdash; no pre-authorized validator set required, unlike Fabric/Corda. Deploys across any topology: cross-border, multi-cloud, satellite.</p>
+</div>
+<div class="card" style="border-top:2px solid var(--accent2)">
+<h2 style="font-size:.8rem;font-family:var(--font);font-weight:700;color:var(--accent2)">Ethereum-Compatible</h2>
+<p style="font-size:.68rem;color:var(--muted);line-height:1.45;margin-top:.2rem">Hyperledger Besu bridge. Existing Solidity smart contracts deploy without modification. ERC-20 tokens, DeFi protocols, NFTs &mdash; all run on PQ consensus. Full JSON-RPC API.</p>
+</div>
+</div>
+</div></div>
+
+<!-- S4: x402 + FIATBARTER -->
+<div class="slide" id="sl4"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">4 &middot; x402 + FiatBarter</div></div>
+<h2>Agent payments + international bank netting</h2>
+<div class="cols" style="margin-top:.4rem">
+<div class="card" style="border-top:2px solid var(--accent2)">
+<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="font-size:.8rem;color:var(--accent2);font-family:var(--font);font-weight:700">x402 Agent Payments</h2><span class="badge" style="background:rgba(160,168,88,.15);color:var(--accent2);border:1px solid rgba(160,168,88,.3)">April 2026</span></div>
+<p style="font-size:.68rem;color:var(--muted);line-height:1.45;margin-top:.3rem">Linux Foundation. Founding members: Coinbase, Google, Microsoft, AWS, Visa, Mastercard, Stripe, Shopify. HTTP-native payments for AI agents. SodsBC is x402-compatible with Dilithium instead of ECDSA &mdash; the only PQ settlement for the agent economy.</p>
+</div>
+<div class="card" style="border-top:2px solid var(--text)">
+<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="font-size:.8rem;font-family:var(--font);font-weight:700;color:var(--text)">FiatBarter Netting</h2><span class="badge" style="background:rgba(232,240,248,.08);color:var(--text);border:1px solid var(--bdr)">94&ndash;96% saved</span></div>
+<p style="font-size:.68rem;color:var(--muted);line-height:1.45;margin-top:.3rem">Banks debit/credit locally on SodsBC. Multilateral netting computes net deltas. <strong style="color:var(--text)">94&ndash;96% reduction in funding movement</strong> &mdash; in line with CLS Bank's published netting efficiency on $7T/day FX settlement.<sup class="ref">[22]</sup> Net deltas settle via existing SWIFT/correspondent rails. Settlement cost approaches zero.</p>
+</div>
+</div>
+<div class="fp" id="f4"></div>
+</div></div>
+
+<!-- S5 GLOBAL OPPORTUNITY merged into final Market + Traction + Ask slide -->
+
+<!-- S5: ORIGIN STORY -->
+<div class="slide" id="sl5"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">5 &middot; Origin Story</div></div>
+<h2>A 200-year-old network effect. Rebuilt for the quantum era.</h2>
+<p class="sub">FiatBarter isn't a new idea. It's the oldest international settlement network in modern banking &mdash; updated with cryptographic guarantees the original never had.</p>
+<div class="os-flow">
+<div class="os-card">
+<div class="os-era">&mdash; 1810s &middot; London, Paris, Frankfurt, Vienna, Naples</div>
+<div class="os-h">The Rothschild Courier System</div>
+<div class="os-body">Five Rothschild brothers resided in five European capitals. When a London client needed to pay a Paris counterparty, <strong>no gold actually crossed borders.</strong> The London brother debited the client; the Paris brother credited the recipient. Balances settled between brothers on their own ledger. Value moved at the speed of couriers &mdash; <strong>not horses carrying coin on bandit-infested roads.</strong></div>
+</div>
+<div class="os-arrow">&rarr;</div>
+<div class="os-card r">
+<div class="os-era">&mdash; 2026 &middot; SodsBC FiatBarter</div>
+<div class="os-h">The Protocol</div>
+<div class="os-body">Member banks hold local accounts on SodsBC. Cross-border obligations post as local debits/credits on the chain. <strong>Multilateral netting collapses gross flows</strong> &mdash; typically 94&ndash;96%, matching CLS Bank's published FX netting efficiency<sup class="ref">[22]</sup> &mdash; to a small net delta that settles through existing SWIFT rails. Post-quantum signatures, sub-second finality, EVM smart contracts, auditable forever.</div>
+</div>
+</div>
+<div class="os-example">
+<div class="lbl">&sect; Worked example</div>
+<div class="txt">US entities owe Singapore entities <em>$1M</em>. Singapore entities owe US entities <em>~S$1.35M (equiv. $1M)</em>. Instead of 2 wire transfers through correspondents with FX spreads and 2-day float, SodsBC debits USD and SGD on-chain locally. <strong>Zero FX conversion. Zero correspondent hops. Zero waiting.</strong> Net delta (if any) clears through banks' existing rails. Extras beyond the barter &mdash; interchange, negotiated bank fees &mdash; accrue to the platform and members.</div>
+</div>
+</div></div>
+
+<!-- S5: NETWORK EFFECTS -->
+<div class="slide" id="sl6"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">6 &middot; Why This Compounds</div></div>
+<h2>Two flywheels. Both strengthen with every new participant.</h2>
+<p class="sub">Post-quantum security is the entry ticket. Network effects are the business. FiatBarter netting and x402 agent settlement both improve non-linearly with node count &mdash; the classic NFX thesis applied to institutional finance.</p>
+<div class="fw-wrap">
+<div class="fw-svg">
+<svg viewBox="0 0 220 220" width="220" height="220">
+<defs>
+<radialGradient id="gctr" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#A0A858" stop-opacity=".25"/><stop offset="100%" stop-color="#A0A858" stop-opacity="0"/></radialGradient>
+<linearGradient id="gcore" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#A0A858"/><stop offset="100%" stop-color="#A0A858"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="0.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<circle cx="110" cy="110" r="95" fill="url(#gctr)"/>
+<circle class="fw-arc" cx="110" cy="110" r="78"/>
+<circle class="fw-arc" cx="110" cy="110" r="58" style="animation-direction:reverse;animation-duration:14s"/>
+<!-- center -->
+<circle cx="110" cy="110" r="26" fill="url(#gcore)" filter="url(#glow)"/>
+<text x="110" y="108" text-anchor="middle" fill="#000028" font-family="JetBrains Mono" font-size="8" font-weight="800">SodsBC</text>
+<text x="110" y="119" text-anchor="middle" fill="#000028" font-family="DM Sans" font-size="5.8" font-weight="700" opacity=".9">PQ consensus</text>
+<!-- 6 orbiting nodes -->
+<g class="fw-node"><circle cx="110" cy="32" r="12" fill="#A0A858"/><text x="110" y="34" text-anchor="middle" fill="#000028" font-size="5.5" font-family="DM Sans" font-weight="800">Bank A</text></g>
+<g class="fw-node"><circle cx="177" cy="71" r="12" fill="#A0A858"/><text x="177" y="73" text-anchor="middle" fill="#000028" font-size="5.5" font-family="DM Sans" font-weight="800">Bank B</text></g>
+<g class="fw-node"><circle cx="177" cy="149" r="12" fill="#A0A858"/><text x="177" y="151" text-anchor="middle" fill="#000028" font-size="5.5" font-family="DM Sans" font-weight="800">Bank C</text></g>
+<g class="fw-node"><circle cx="110" cy="188" r="12" fill="#E8F0F8"/><text x="110" y="190" text-anchor="middle" fill="#000028" font-size="5.5" font-family="DM Sans" font-weight="800">Agent</text></g>
+<g class="fw-node"><circle cx="43" cy="149" r="12" fill="#E8F0F8"/><text x="43" y="151" text-anchor="middle" fill="#000028" font-size="5.5" font-family="DM Sans" font-weight="800">Agent</text></g>
+<g class="fw-node"><circle cx="43" cy="71" r="12" fill="#A0A858"/><text x="43" y="73" text-anchor="middle" fill="#000028" font-size="5.5" font-family="DM Sans" font-weight="800">Bank D</text></g>
+<!-- connecting lines -->
+<line x1="110" y1="55" x2="110" y2="88" stroke="#A0A858" stroke-width="1" opacity=".45"/>
+<line x1="154" y1="79" x2="127" y2="98" stroke="#A0A858" stroke-width="1" opacity=".45"/>
+<line x1="154" y1="141" x2="127" y2="122" stroke="#A0A858" stroke-width="1" opacity=".45"/>
+<line x1="110" y1="164" x2="110" y2="134" stroke="#E8F0F8" stroke-width="1" opacity=".5"/>
+<line x1="66" y1="141" x2="93" y2="122" stroke="#E8F0F8" stroke-width="1" opacity=".5"/>
+<line x1="66" y1="79" x2="93" y2="98" stroke="#A0A858" stroke-width="1" opacity=".45"/>
+</svg>
+</div>
+<div class="fw-txt">
+<div class="fw-step"><div class="l">Flywheel 1 &middot; FiatBarter netting</div><div class="t">Each new bank joining the network raises the multilateral netting ratio non-linearly. At 4 banks, ~60% of gross flows cancel. At 20+, typical netting efficiency exceeds 90%. <strong>More participants &rarr; lower settlement cost per transaction &rarr; stronger case to join.</strong></div></div>
+<div class="fw-step"><div class="l">Flywheel 2 &middot; PQ rail for x402</div><div class="t">x402 launched April 2, 2026 on Base L2 with ECDSA.<sup class="ref">[5]</sup> When Google-broken ECDSA becomes a procurement blocker, x402 needs a post-quantum rail. SodsBC is the only PQ-native chain with EVM compatibility and sub-second finality. <strong>First agents migrate to SodsBC &rarr; more agents follow the liquidity.</strong></div></div>
+<div class="fw-step"><div class="l">Flywheel 3 &middot; Regulatory gravity</div><div class="t">NIST deprecates classical in 2030, disallows in 2035. Once one G-SIB regulator mandates PQ settlement, every counterparty must comply to remain interoperable. <strong>Compliance becomes the acquisition engine.</strong></div></div>
+<div class="fw-step"><div class="l">Flywheel 4 &middot; Standards &amp; IP</div><div class="t">IEEE TDSC 2024 peer review + US patent pending covering SodsBC awVSS coins and SodsMPC FSM contracts. Each institutional deployment generates reference implementations that lock in SodsBC as the de facto PQ BFT standard &mdash; exactly how Corda and Fabric captured the 2017&ndash;2020 cycle.</div></div>
+</div>
+</div>
+<div style="margin-top:.5rem;font-size:.55rem;color:var(--muted);line-height:1.5;font-style:italic;padding:.3rem .5rem;border-left:2px solid var(--bdr)">These are the compounding dynamics the protocol is architected for. Live flywheel state &mdash; first institutional deployments, first agent liquidity &mdash; is what the $3M raise funds over the 18-month wedge.</div>
+</div></div>
+
+<!-- S6: COMPETITIVE MATRIX -->
+<div class="slide" id="sl7"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">7 &middot; Competitive Landscape</div></div>
+<h2>SodsBC is the only PQ-by-construction consensus layer</h2>
+<p class="sub">Every other "quantum-resistant" chain retrofits PQ signatures onto a classical consensus core. The consensus protocol itself &mdash; MVBA voting, RBC broadcast, common random coins &mdash; is still quantum-vulnerable. SodsBC replaces all of it.</p>
+<table class="cm">
+<thead>
+<tr><th>Protocol</th><th>PQ Sigs</th><th>PQ Consensus</th><th>Architecture</th><th>Throughput</th><th>EVM</th><th>Production Status</th></tr>
+</thead>
+<tbody>
+<tr class="sb"><td class="name">SodsBC</td><td class="chk">&#10003; Dilithium-3</td><td class="chk">&#10003; awVSS coins + SHA3 MVBA</td><td class="mono">Async BFT (MVBA+RBC+BBA-ACS)</td><td class="mono">&gt;100K TPS<sup style="font-size:.5rem">n=4</sup><sup class="ref">[6]</sup></td><td class="chk">&#10003; Besu</td><td>Live testnet &middot; IEEE 2024<sup class="ref">[6]</sup> &middot; US patent<sup class="ref">[9]</sup></td></tr>
+<tr><td class="name">QANplatform<sup class="ref">[11]</sup></td><td class="chk">&#10003; Dilithium (ML-DSA)</td><td class="x">&#10007; Classical PoR</td><td class="mono">Hybrid PoS + XLINK cross-sign</td><td class="mono">~3K TPS (permissioned)</td><td class="chk">&#10003;</td><td class="pt">TestNet &middot; MainNet slipped to Jul 2026</td></tr>
+<tr><td class="name">Algorand<sup class="ref">[12]</sup></td><td class="pt">Falcon state-proofs only</td><td class="x">&#10007; Still Ed25519 core</td><td class="mono">PPoS</td><td class="mono">~10K TPS</td><td class="x">&#10007;</td><td>Mainnet &middot; opt-in Falcon Nov 2025</td></tr>
+<tr><td class="name">Hedera<sup class="ref">[13]</sup></td><td class="pt">&ldquo;Exploring&rdquo; via SEALSQ HW</td><td class="x">&#10007; Classical Hashgraph sigs</td><td class="mono">aBFT Hashgraph (permissioned)</td><td class="mono">~10K TPS</td><td class="chk">&#10003; EVM</td><td class="pt">Research phase &middot; no PQ shipped</td></tr>
+<tr><td class="name">Solana (proposed)<sup class="ref">[14]</sup></td><td class="pt">Dilithium testnet</td><td class="x">&#10007; Classical PoH/TowerBFT</td><td class="mono">PoH + TowerBFT</td><td class="mono">~3K TPS live</td><td class="x">&#10007;</td><td class="pt">Dec 2025 testnet &middot; no mainnet vote</td></tr>
+<tr><td class="name">QRL<sup class="ref">[15]</sup></td><td class="chk">&#10003; XMSS (stateful)</td><td class="pt">Hash-based signing, classical BFT</td><td class="mono">PoS (hash-only)</td><td class="mono">~70 TPS</td><td class="pt">Zond testnet</td><td>Mainnet live since 2018</td></tr>
+<tr><td class="name">JPM Kinexys / Corda / Fabric<sup class="ref">[7]</sup></td><td class="x">&#10007; ECDSA</td><td class="x">&#10007; All classical</td><td class="mono">Various BFT</td><td class="mono">Varies</td><td class="pt">Varies</td><td class="x">Production &middot; no PQ roadmap shipped</td></tr>
+</tbody>
+</table>
+<div class="card" style="margin-top:.4rem;border-left:3px solid var(--teal)">
+<p style="font-size:.65rem;color:var(--text);line-height:1.5"><strong style="color:var(--accent2)">The defensible wedge.</strong> Swapping ECDSA for Dilithium at the signature layer is a weekend library change. Rebuilding consensus with PQ randomness (awVSS), PQ anti-censorship (AES-256), and PQ MVBA predicates (nested hashes) is a 4-year research program &mdash; which is what SodsBC is. The IEEE TDSC 2024 paper and US patent pending covering both SodsBC awVSS coins and SodsMPC FSM contracts make this the hard version of post-quantum, done first.</p>
+</div>
+</div></div>
+
+<!-- S8: BUSINESS MODEL -->
+<div class="slide" id="sl8"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">8 &middot; Business Model</div></div>
+<h2>How SodsBC makes money &mdash; and what we do with yours.</h2>
+<p class="sub">Institutional software sells on clear pricing and a disciplined plan. Four revenue channels, one focused 18-month build, a $3M raise on NFX FAST terms.</p>
+<div class="bm-grid">
+<div class="bm-col">
+<div class="bm-card accent">
+<div class="bm-label">Pricing &middot; Benchmarked to Market</div>
+<div class="bm-row"><span class="k">SodsBC per project, yearly</span><span class="v">$200K</span></div>
+<div class="bm-row"><span class="k">AWS Fabric prod (infra only)<sup class="ref">[17]</sup></span><span class="v">$60&ndash;180K/yr</span></div>
+<div class="bm-row"><span class="k">5-year fixed engagement</span><span class="v">$1.5M</span></div>
+<div class="bm-row"><span class="k">Yr-2 projected revenue</span><span class="v">$3.8M</span></div>
+<div class="bm-row" style="border-top:1px solid rgba(160,168,88,.3);padding-top:.4rem;margin-top:.2rem"><span class="k" style="font-size:.58rem;color:var(--muted)">SodsBC replaces consensus engine with PQ security at parity with infrastructure-only cost of classical Fabric/Besu hosting.</span></div>
+</div>
+<div class="bm-card">
+<div class="bm-label">Go-to-Market &middot; Four Channels</div>
+<div class="bm-channels">
+<div class="bm-chan"><div class="nm">Direct</div><div class="ex">Banks, payment operators, settlement networks</div></div>
+<div class="bm-chan"><div class="nm">VAR</div><div class="ex">PwC, E&amp;Y, Tech Data</div></div>
+<div class="bm-chan"><div class="nm">OEM</div><div class="ex">Accenture, Dell-EMC, Akamai, Mitsubishi &mdash; "SodsBC Inside"</div></div>
+<div class="bm-chan"><div class="nm">License</div><div class="ex">Legal &amp; compliance channels for regulated settlement</div></div>
+</div>
+</div>
+</div>
+<div class="bm-col">
+<div class="bm-ask">
+<div class="hdr">$3M</div>
+<div class="sub">NFX FAST &middot; 18 months runway &middot; $167K/month average burn &middot; Standard SAFE terms</div>
+<div class="bm-use"><strong style="color:var(--accent2)">18-month wedge:</strong> Institutional PoC with one G-SIB corridor, one agentic-payment partner, one emerging-markets regulator sandbox. Sequential milestones:<br><br><strong>Q2&ndash;Q3 2026:</strong> SodsBC GA. Besu bridge production-hardened. First paid pilot signed (target: 1 G-SIB cross-border corridor OR 1 x402 agentic partner).<br><br><strong>Q4 2026:</strong> Live 4-bank FiatBarter testnet with pilot partner. SodsMPC ZK-contract alpha.<br><br><strong>H1 2027:</strong> Two additional paid pilots (targeting GCC-South Asia corridor, Africa PAPSS integration). SodsMPC GA. Three production deployments by month 18.</div>
+<div class="bm-team">Lead investor sought. Silent co-investors have signaled willingness to follow. Private banking introductions active through Jean Chalopin (former Chairman, Deltec) and partners. SpaceBelt orbital PoC discussions continue.</div>
+</div>
+</div>
+</div>
+</div></div>
+
+<!-- S9: VALIDATION & ADVISORS -->
+<div class="slide" id="sl9"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">9 &middot; Validation</div></div>
+<h2>Already evaluated. Already endorsed. Already peer-reviewed.</h2>
+<p class="sub">SodsBC has been through the gauntlet institutional investors usually pay diligence firms to replicate &mdash; IEEE peer review, Tier-1 enterprise evaluation, <strong style="color:var(--accent2)">extended examinations through multiple PoCs</strong>, private banking endorsement, and a formal academic publication record.</p>
+<div class="va-grid">
+<div class="va-quote pink">
+<span class="qmark">&ldquo;</span>
+<div class="va-text">We feel that a startup like SodsBC, led by the esteemed Professor Shlomi Dolev, can bring to the market a fast, safe infrastructure for the future quantum-safe Cryptocurrency.</div>
+<div class="va-src">&mdash; <strong>Jean Chalopin</strong>, Former Chairman, Deltec International Group (sold to Britannia Bank 2025) &middot; Nassau, Bahamas</div>
+</div>
+<div class="va-logos">
+<div class="va-logo-row">
+<div class="va-logo-icon" >IE</div>
+<div class="va-logo-body"><div class="va-logo-name">IEEE TDSC 2024</div><div class="va-logo-desc">Full peer-reviewed publication. Earlier version IEEE Blockchain 2020 (16% accept rate).</div></div>
+</div>
+<div class="va-logo-row">
+<div class="va-logo-icon" >IN</div>
+<div class="va-logo-body"><div class="va-logo-name">Intel (2022) &middot; Extended PoC</div><div class="va-logo-desc">K. Race &amp; N. Peled conducted an extended evaluation of SodsBC inside Hyperledger Fabric on AWS across multiple node configurations.</div></div>
+</div>
+<div class="va-logo-row">
+<div class="va-logo-icon" >T</div>
+<div class="va-logo-body"><div class="va-logo-name">Tata &middot; Technical PoC</div><div class="va-logo-desc">Independent technical evaluation of the consensus prototype under adversarial and scaling conditions.</div></div>
+</div>
+<div class="va-logo-row">
+<div class="va-logo-icon">MPC</div>
+<div class="va-logo-body"><div class="va-logo-name">SodsMPC &middot; Worked Example</div><div class="va-logo-desc">Alice, Bob, Carol deposit $100 each. Sealed auction on SodsBC. Seller receives $60. Nobody knows the bids, the business logic, or who won &mdash; only that the net transfer occurred.</div></div>
+</div>
+</div>
+</div>
+<div class="va-grid" style="margin-top:.5rem;grid-template-columns:1fr 1fr">
+<div class="va-quote green">
+<div class="va-text" style="font-style:normal">
+<strong style="color:var(--accent2);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;font-size:.65rem">Patents &middot; Two Defensive Moats</strong><br>
+<span style="font-size:.62rem;color:var(--muted);line-height:1.5"><strong style="color:var(--text)">US Patent pending US20230186293A1</strong><sup class="ref">[9]</sup> &mdash; merged submission covering <strong style="color:var(--accent2)">both</strong>:<br>(1) <strong style="color:var(--text)">SodsBC awVSS coins</strong>: consensus-layer randomness replacing quantum-vulnerable threshold signatures.<br>(2) <strong style="color:var(--text)">SodsMPC FSM contracts</strong>: zero-knowledge smart contracts where <em style="color:var(--accent2);font-style:normal;font-weight:700">the business logic itself stays private</em>, not just the inputs. The growth vehicle beyond settlement.</span>
+</div>
+</div>
+<div class="va-quote gold">
+<div class="va-text" style="font-style:normal">
+<strong style="color:var(--accent2);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;font-size:.65rem">Capital: Lead Investor Sought</strong><br>
+<span style="font-size:.62rem;color:var(--muted);line-height:1.5">Committed co-investors have signaled willingness to follow the lead &mdash; names held per their preference not to be public until a lead is named. Global banking introductions active through Jean Chalopin (former Chairman, Deltec) and partners; orbital PoC discussion with SpaceBelt / Cloud Constellation.</span>
+</div>
+</div>
+</div>
+</div></div>
+
+<!-- S11: MARKET + TRACTION + ASK (merged) -->
+<div class="slide" id="sl10"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">10 &middot; Market + Traction + Ask</div></div>
+<h2>Three converging markets. No production PQ consensus. One protocol.</h2>
+<div class="mk-stats">
+<div class="mk-stat"><div class="v">$230B+<sup class="ref">[8]</sup></div><div class="l">Cross-border revenue pool</div></div>
+<div class="mk-stat"><div class="v">$7B/day<sup class="ref">[7]</sup></div><div class="l">JPM Kinexys (all ECDSA)</div></div>
+<div class="mk-stat"><div class="v acc">0</div><div class="l">PQ consensus layers in production</div></div>
+</div>
+<div class="mk-grid">
+<div class="mk-col">
+<div class="mk-label">Agentic Commerce</div>
+<div class="mk-hdr">AI agents paying AI agents.</div>
+<div class="mk-stat-big">$17.5<span class="unit">trillion GMV by 2030</span></div>
+<p class="mk-sub">30% of global e-commerce influenced by AI agents by 2030<sup class="ref">[18]</sup>. US agentic commerce: <strong>$300&ndash;500B</strong> (Bain)<sup class="ref">[18]</sup> / <strong>$190&ndash;385B</strong> (Morgan Stanley)<sup class="ref">[19]</sup>. Google AP2, Mastercard Agent Pay &mdash; all on classical ECDSA today.</p>
+</div>
+<div class="mk-col">
+<div class="mk-label">Emerging Markets Banking</div>
+<div class="mk-hdr">Where the growth actually is.</div>
+<div class="mk-stat-big">$1<span class="unit">trillion Africa by 2035</span></div>
+<p class="mk-sub">Africa cross-border: <strong>$329B &rarr; $1T</strong>, 12% CAGR<sup class="ref">[20]</sup>. PAPSS 15+ central banks, $5B projected savings<sup class="ref">[20]</sup>. <strong>781M</strong> mobile money accounts, $830B annual<sup class="ref">[21]</sup>. APAC 9.16% CAGR, fastest globally<sup class="ref">[21]</sup>. GCC&rarr;South Asia $142B. Brazil Pix $980B. All classical.</p>
+</div>
+<div class="mk-col">
+<div class="mk-label">Institutional Settlement</div>
+<div class="mk-hdr">The regulated anchor.</div>
+<div class="mk-stat-big">$230<span class="unit">B &rarr; $280B by 2030</span></div>
+<p class="mk-sub">Cross-border payments revenue pool growing to $280B by 2030<sup class="ref">[8]</sup>. Every G-SIB regulator will mandate PQ migration before 2029<sup class="ref">[1][2]</sup>. Institutional settlement anchors deployment; agent commerce and emerging markets compound on the same consensus layer.</p>
+</div>
+</div>
+<div class="mk-foot">
+<div class="mk-foot-card">
+<div class="mk-foot-h">Traction &middot; Technology</div>
+<div class="mk-foot-row">IEEE TDSC 2024 peer-reviewed<sup class="ref">[6]</sup></div>
+<div class="mk-foot-row">US Patent pending US20230186293A1<sup class="ref">[9]</sup> &mdash; covers SodsBC awVSS coins + SodsMPC FSM contracts</div>
+<div class="mk-foot-row">Live 4-node OCI testnet &middot; 163 QA tests passing &middot; AWS scaling benchmarks in progress</div>
+</div>
+<div class="mk-foot-card">
+<div class="mk-foot-h">Capital &middot; $3M Ask &middot; NFX FAST (9-day decision)</div>
+<div class="mk-foot-row"><strong class="acc">Lead investor sought</strong> &mdash; silent co-investors ready to follow</div>
+<div class="mk-foot-row"><strong>Private banking intros</strong> via Jean Chalopin (former Chairman, Deltec)</div>
+<div class="mk-foot-row"><strong>SpaceBelt</strong> orbital PoC &middot; <strong>SodsMPC</strong> ZK-contracts growth path</div>
+</div>
+</div>
+<div class="mk-team">
+<div class="mk-team-nm"><strong>Prof. Shlomi Dolev</strong> &middot; Ben-Gurion University &middot; IEEE Fellow &middot; 400+ publications &middot; MIT Press author &middot; 25+ years cryptosystems research</div>
+<div class="mk-team-em">shlomidolev@gmail.com &middot; sodsbc.com</div>
+</div>
+</div></div>
+
+<!-- S12: REFERENCES -->
+<div class="slide" id="sl11"><div class="si">
+<div class="tb"><div class="br">SodsBC</div><div class="sl">11 &middot; References</div></div>
+<h2>References &amp; Sources</h2>
+<p class="rf-intro">All quantitative claims in this deck are sourced from primary public materials &mdash; standards bodies, vendor disclosures, peer-reviewed publications, and government press releases. URLs are provided for verification.</p>
+<div class="rf-grid">
+<div class="rf-item"><span class="rf-num">[1]</span><div class="rf-body"><span class="title">Google &middot; Quantum cryptography migration deadline 2029</span><span class="src">blog.google/technology/safety-security/quantum-cryptography-migration-2029/</span></div></div>
+<div class="rf-item"><span class="rf-num">[2]</span><div class="rf-body"><span class="title">Cloudflare &middot; Post-quantum roadmap (2029 deadline)</span><span class="src">blog.cloudflare.com/post-quantum-roadmap/</span></div></div>
+<div class="rf-item"><span class="rf-num">[3]</span><div class="rf-body"><span class="title">NIST FIPS 204 &middot; ML-DSA (Dilithium) standard</span><span class="src">csrc.nist.gov/pubs/fips/204/final</span></div></div>
+<div class="rf-item"><span class="rf-num">[4]</span><div class="rf-body"><span class="title">NIST SP 800-131A &middot; Algorithm deprecation timeline</span><span class="src">csrc.nist.gov/publications/detail/sp/800-131a</span></div></div>
+<div class="rf-item"><span class="rf-num">[5]</span><div class="rf-body"><span class="title">x402 Foundation launch &middot; Linux Foundation, April 2026</span><span class="src">linuxfoundation.org/press/linux-foundation-is-launching-the-x402-foundation</span></div></div>
+<div class="rf-item"><span class="rf-num">[6]</span><div class="rf-body"><span class="title">SodsBC &middot; IEEE TDSC 2024 (TPS / latency benchmarks)</span><span class="src">doi.org/10.1109/TDSC.2024 &middot; arXiv:2002.07560</span></div></div>
+<div class="rf-item"><span class="rf-num">[7]</span><div class="rf-body"><span class="title">JPMorgan Kinexys &middot; &gt;$7B/day average transaction volume</span><span class="src">jpmorgan.com/kinexys/index</span></div></div>
+<div class="rf-item"><span class="rf-num">[8]</span><div class="rf-body"><span class="title">Cross-border payments revenue pool &middot; ~$230B today, $280B by 2030</span><span class="src">convera.com/blog/payments/cross-border-payment-revenues-to-reach-280-billion-by-2030/</span></div></div>
+<div class="rf-item"><span class="rf-num">[9]</span><div class="rf-body"><span class="title">USPTO &middot; US20230186293A1 (merged: awVSS common-coin + SodsMPC FSM contracts)</span><span class="src">patents.google.com/patent/US20230186293A1</span></div></div>
+<div class="rf-item"><span class="rf-num">[10]</span><div class="rf-body"><span class="title">NSA CNSA 2.0 &middot; Harvest-now-decrypt-later guidance</span><span class="src">nsa.gov/cybersecurity/post-quantum-cybersecurity-resources/</span></div></div>
+<div class="rf-item"><span class="rf-num">[11]</span><div class="rf-body"><span class="title">QANplatform &middot; XLINK Dilithium testnet, mainnet roadmap</span><span class="src">medium.com/qanplatform &middot; thequantuminsider.com/2024/05/09</span></div></div>
+<div class="rf-item"><span class="rf-num">[12]</span><div class="rf-body"><span class="title">Algorand &middot; Falcon state-proofs (activated Sept 2022)</span><span class="src">developer.algorand.org/articles/state-proofs/ &middot; algorand.co</span></div></div>
+<div class="rf-item"><span class="rf-num">[13]</span><div class="rf-body"><span class="title">Hedera &middot; SEALSQ QS7001 partnership (Dec 2024)</span><span class="src">hedera.com/blog &middot; sealsq.com press</span></div></div>
+<div class="rf-item"><span class="rf-num">[14]</span><div class="rf-body"><span class="title">Solana &middot; Post-quantum testnet (Dec 2025)</span><span class="src">solana.org &middot; Project Eleven readiness assessments</span></div></div>
+<div class="rf-item"><span class="rf-num">[15]</span><div class="rf-body"><span class="title">QRL &middot; XMSS hash-based signatures (since 2018)</span><span class="src">theqrl.org &middot; NIST SP 800-208 XMSS</span></div></div>
+<div class="rf-item"><span class="rf-num">[16]</span><div class="rf-body"><span class="title">SodsMPC &middot; FSM-based zero-knowledge contracts (patent pending)</span><span class="src">IEEE ISNCA 2020 &middot; sodsbc.com/sodsmpc</span></div></div>
+<div class="rf-item"><span class="rf-num">[17]</span><div class="rf-body"><span class="title">AWS Managed Blockchain pricing &middot; Fabric $60&ndash;180K/yr production infra</span><span class="src">aws.amazon.com/managed-blockchain/pricing/hyperledger/ &middot; chainlaunch.dev/tools</span></div></div>
+<div class="rf-item"><span class="rf-num">[18]</span><div class="rf-body"><span class="title">Bain / Deloitte / Santander &middot; Agentic commerce $300&ndash;500B US by 2030; $17.5T global GMV</span><span class="src">bain.com/insights/2030-forecast-agentic-ai &middot; santander.com/en/press-room/2026/01/getnet-agentic-commerce</span></div></div>
+<div class="rf-item"><span class="rf-num">[19]</span><div class="rf-body"><span class="title">Morgan Stanley &middot; Agentic commerce $190&ndash;385B US; Mastercard Agent Pay launch</span><span class="src">morganstanley.com/insights/articles/agentic-commerce-market-impact-outlook</span></div></div>
+<div class="rf-item"><span class="rf-num">[20]</span><div class="rf-body"><span class="title">Oui Capital / Ecofin Agency &middot; Africa cross-border $329B&rarr;$1T by 2035 (12% CAGR)</span><span class="src">ecofinagency.com/2025/0206-africa-cross-border-payments-1-trillion-2035</span></div></div>
+<div class="rf-item"><span class="rf-num">[21]</span><div class="rf-body"><span class="title">GSMA / Mordor &middot; Mobile money Africa: 781M accounts, $830B annual; APAC 9.16% CAGR</span><span class="src">mordorintelligence.com/industry-reports/cross-border-payments-market</span></div></div>
+<div class="rf-item"><span class="rf-num">[22]</span><div class="rf-body"><span class="title">CLS Bank &middot; Multilateral netting reduces funding requirements by 96% on $7T/day FX settlement</span><span class="src">cls-group.com/products/settlement/ &middot; en.wikipedia.org/wiki/CLS_Group</span></div></div>
+</div>
+</div></div>
+
+<div class="pb">
+<button onclick="togglePlay()" id="ppb">&#9654;</button>
+<button onclick="toggleMute()" id="mmb">&#9835;</button>
+<div class="ds" id="ds"></div>
+<span class="inf" id="inf">1/12</span>
+</div>
+
+<script>
+var S=12,cur=0,au=false,muted=false,synth=window.speechSynthesis;
+var dse=document.getElementById('ds');
+for(var i=0;i<S;i++){var dd=document.createElement('div');dd.className='dd'+(i===0?' a':'');dd.onclick=(function(x){return function(){jumpTo(x)}})(i);dse.appendChild(dd)}
+function showS(n){document.querySelectorAll('.slide').forEach(function(s,i){s.classList.toggle('active',i===n)});dse.querySelectorAll('.dd').forEach(function(d,i){d.className='dd'+(i===n?' a':(i<n?' dn':''))});document.getElementById('inf').textContent=(n+1)+'/'+S}
+function sl(ms){return new Promise(function(r){setTimeout(r,ms)})}
+function speak(t,cb){synth.cancel();if(!t||muted){if(cb)cb();return}
+var u=new SpeechSynthesisUtterance(t);u.rate=.9;
+var v=synth.getVoices(),p=['Google UK English Female','Samantha','Karen','Moira'];
+for(var a=0;a<p.length;a++){for(var b=0;b<v.length;b++){if(v[b].name.indexOf(p[a])>=0){u.voice=v[b];break}}if(u.voice)break}
+if(!u.voice){for(var b=0;b<v.length;b++){if(v[b].lang.indexOf('en')===0){u.voice=v[b];break}}}
+u.onstart=function(){document.getElementById('vi').classList.add('on')};
+u.onend=function(){document.getElementById('vi').classList.remove('on');if(cb)cb()};
+synth.speak(u)}
+function af(p,ic,m){var f=document.getElementById(p);var t=new Date();var ts=t.getMinutes().toString().padStart(2,'0')+':'+t.getSeconds().toString().padStart(2,'0');
+f.innerHTML+='<div class="fs" style="animation-delay:'+(f.children.length*0.03)+'s"><div class="t">'+ts+'</div><div class="i">'+ic+'</div><div class="m">'+m+'</div></div>';f.scrollTop=f.scrollHeight}
+
+var N=[
+"SodsBC. Post-quantum blockchain for financial settlement. The only protocol where every cryptographic primitive, not just the interface, but the consensus itself, is post-quantum from genesis. Visa-level throughput. Ethereum-compatible. Agent-ready via x 402. And multilateral netting that enables international banking networks at near-zero settlement cost.",
+
+"The 2029 deadline. On April 7, 2026, just days ago, both Google and Cloudflare set 2029 as their hard deadline for full post-quantum migration. Google Quantum AI demonstrated that ECC 256, the signature scheme protecting every bank blockchain, every Bitcoin wallet, every TLS certificate, can be broken with fewer than 500,000 physical qubits. Cloudflare called this much sooner than expected. NIST deprecates classical algorithms in 2030, disallows them entirely by 2035. Realistic enterprise migration takes 5 to 12 years. If you start today, you're racing the clock. Every institutional blockchain, JPMorgan Kinexys, HSBC Digital Vault, Citi Token Services, R3 Corda, Ethereum, uses ECDSA. Zero have migrated. Settlement records must remain unforgeable for decades. Harvest now, decrypt later attacks are already underway.",
+
+"Post-quantum by construction. SodsBC is not a classical blockchain with a PQ wrapper bolted on. Every primitive inside the consensus is post-quantum. Dilithium 3, NIST FIPS 204, for all digital signatures. AES 256 CTR for block encryption and anti-censorship. SHA 3 256 for Merkle trees and hash chains. And awVSS common random coins for the BBA randomness source, replacing the quantum-vulnerable threshold signatures that competitors rely on. Competitors like Honeybadger and Dumbo use threshold signatures based on the discrete logarithm problem, which Shor's algorithm breaks. SodsBC replaces them entirely with preprocessed nested hashes and information-theoretically secure secret sharing. Zero ECDSA. Zero RSA. Zero classical pairings. Not just at the API level, but inside the MVBA voting rounds, the reliable broadcast erasure coding, the binary Byzantine agreement coin flips, every nested hash proof, every block header. The consensus itself is quantum-safe. This is peer-reviewed in IEEE Transactions on Dependable and Secure Computing 2024, with a US patent pending.",
+
+"Performance. More than 100 thousand transactions per second. That is Visa-level throughput. Sub-second finality under 0.8 seconds. Zero gas fees. And full Ethereum compatibility via Hyperledger Besu, meaning existing Solidity smart contracts deploy on SodsBC without modification. The consensus is asynchronous Byzantine fault tolerant. It makes zero assumptions about network timing. The protocol reaches agreement regardless of latency, network partitions, or adversarial delay. It tolerates up to one-third Byzantine failures. And unlike Fabric or Corda, it is permissionless: no pre-authorized validator set is required to participate in consensus. This means SodsBC deploys across any topology: cross-border between banks, multi-cloud across providers, or on satellite constellations in orbit.",
+
+"Two capabilities that define the business model. First, x 402: the agent payment protocol launched April 2, 2026 by the Linux Foundation. Founding members include Coinbase, Google, Microsoft, AWS, Visa, Mastercard, Stripe, and Shopify. x 402 embeds payments into HTTP for AI agents. SodsBC is x 402 compatible with Dilithium signatures instead of ECDSA, making it the only post-quantum settlement layer for the autonomous agent economy. Second, FiatBarter: multilateral netting as a native chaincode. Banks debit and credit locally on the SodsBC chain. The netting algorithm computes net deltas across all participants. 94 to 96 percent of gross flows cancel out &mdash; matching CLS Bank's published netting efficiency on seven trillion dollars per day of FX settlement. Only the net differences actually move through existing SWIFT and correspondent channels. This enables the formation of international banking networks where settlement cost approaches zero and compliance flows through existing regulated rails.",
+
+"Origin story. FiatBarter is not a new idea. It is the oldest international settlement network in modern banking, rebuilt for the quantum era. In the early 1800s, five Rothschild brothers lived in five European capitals: London, Paris, Frankfurt, Vienna, and Naples. When a London client needed to pay a Paris counterparty, no gold actually crossed borders. The London brother debited the client. The Paris brother credited the recipient. Balances settled between the brothers on their own ledger. Value moved at the speed of couriers, not horses carrying coin on bandit-infested roads. Two hundred years later, SodsBC FiatBarter runs the same principle with cryptographic guarantees the original never had. Member banks hold local accounts on the chain. Cross-border obligations post as local debits and credits. Multilateral netting collapses gross flows, typically by ninety-four to ninety-six percent &mdash; in line with CLS Bank's published FX netting efficiency &mdash; to a small net delta that settles through existing SWIFT rails. Post-quantum signatures, sub-second finality, EVM smart contracts, auditable forever. Worked example: US entities owe Singapore entities one million dollars, and Singapore entities owe US entities roughly one-point-three-five million Singapore dollars, equivalent to one million US. Instead of two wire transfers through correspondents with FX spreads and two-day float, SodsBC debits USD and SGD on-chain locally. Zero FX conversion. Zero correspondent hops. Zero waiting. The net delta, if any, clears through banks' existing rails.",
+
+"Why this compounds. Post-quantum security is the entry ticket. Network effects are the business. SodsBC has four reinforcing flywheels. First, FiatBarter netting: each new bank joining the network raises the multilateral netting ratio non-linearly. At four banks, around sixty percent of gross flows cancel. At twenty or more banks, netting efficiency exceeds ninety percent. More participants means lower settlement cost per transaction, which strengthens the case for the next bank to join. Second, x 402 agent settlement: x 402 launched on Base Layer 2 with ECDSA. When Google-broken ECDSA becomes a procurement blocker, x 402 will need a post-quantum rail. SodsBC is the only post-quantum-native chain with EVM compatibility and sub-second finality. First agents migrate to SodsBC, then more agents follow the liquidity. Third, regulatory gravity: NIST deprecates classical in 2030, disallows in 2035. Once one systemically important bank regulator mandates post-quantum settlement, every counterparty must comply to remain interoperable. Compliance becomes the acquisition engine. Fourth, standards and intellectual property: the IEEE peer review and the US patent pending covering both SodsBC awVSS coins and SodsMPC FSM contracts mean each institutional deployment generates reference implementations that lock SodsBC in as the de facto post-quantum BFT standard, exactly how Corda and Fabric captured the 2017 to 2020 cycle.",
+
+"The competitive landscape. SodsBC is the only post-quantum-by-construction consensus layer. Every other so-called quantum-resistant chain retrofits post-quantum signatures onto a classical consensus core. The consensus protocol itself, the voting, the broadcast, the random coins, is still quantum-vulnerable. QANplatform uses Dilithium at the signature layer via its XLINK cross-signing scheme, but the underlying Proof-of-Randomness consensus is classical, and Mainnet has slipped to mid 2026. Algorand uses Falcon signatures only for state proofs every 256 rounds. Its core account signing is still Ed25519. Hedera is researching Dilithium via SEALSQ hardware but has shipped nothing. Solana opened a post-quantum testnet in December 2025 with no mainnet vote scheduled. QRL uses hash-based XMSS signatures on a classical Byzantine fault tolerant consensus, with throughput capped around seventy transactions per second. JPMorgan Kinexys, Corda, and Fabric all run on ECDSA with no shipped post-quantum roadmap. The defensible wedge: swapping ECDSA for Dilithium at the signature layer is a weekend library change. Rebuilding consensus with post-quantum randomness, post-quantum anti-censorship, and post-quantum MVBA predicates is a four-year research program. That is what SodsBC is. Done first.",
+
+"Business model. Institutional software sells on clear pricing and a disciplined plan. Pricing: two hundred thousand dollars per project per year, benchmarked against AWS-managed Hyperledger Fabric production infrastructure which costs sixty to one hundred eighty thousand dollars per year for infrastructure alone. SodsBC replaces the consensus engine with post-quantum security at parity with that infrastructure cost. One-point-five million for a five-year fixed-cost engagement. Year-two revenue projection: three-point-eight million dollars from four projects plus two fixed-cost deployments. Four go-to-market channels: direct to banks and payment operators; value-added resellers like PwC, Ernst and Young, and Tech Data; OEM licensing as \"SodsBC inside\" Hyperledger Fabric for partners like Accenture, Dell-EMC, Akamai, and Mitsubishi; and licensing through legal and compliance channels for regulated settlement. The ask: three million dollars on NFX FAST terms via standard SAFE. Eighteen months of runway at one hundred sixty-seven thousand dollars per month average burn. NFX FAST provides a nine-day decision and three-week funding close, allowing us to move immediately on the first paid pilot. Eighteen-month wedge: one institutional pilot with a G-SIB cross-border corridor, one agentic-payment partner through x402, one emerging-markets regulator sandbox. Sequential milestones: second and third quarter 2026, SodsBC GA, Besu bridge production-hardened, first paid pilot signed. Fourth quarter 2026, live four-bank FiatBarter testnet with pilot partner, SodsMPC zero-knowledge contract alpha. First half 2027, two additional paid pilots targeting the Gulf to South Asia corridor and African PAPSS integration, SodsMPC GA, three production deployments by month eighteen. We are seeking a lead investor. Silent co-investors have signaled willingness to follow. Private banking introductions active through Jean Chalopin, former Chairman of Deltec International Group, which was sold to Britannia Bank in 2025. SpaceBelt orbital proof-of-concept discussions continue.",
+
+"Validation. SodsBC has already been through the gauntlet most investors pay diligence firms to replicate. Jean Chalopin, former Chairman of Deltec International Group in Nassau, which was sold to Britannia Bank in 2025, on record: We feel that a startup like SodsBC, led by the esteemed Professor Shlomi Dolev, can bring to the market a fast, safe infrastructure for the future quantum-safe cryptocurrency. Deltec was the private bank to the digital-asset sector during his tenure. The protocol is published in IEEE Transactions on Dependable and Secure Computing 2024, the top-tier venue for security research, with an earlier version at IEEE Blockchain 2020 at a sixteen percent acceptance rate. Intel engineers conducted an extended proof-of-concept evaluation of SodsBC inside Hyperledger Fabric on AWS across multiple node configurations in 2022. Tata carried out an independent technical evaluation of the consensus prototype under adversarial and scaling conditions. One US patent pending, application US20230186293-A-1, which is a merged submission covering two defensible innovations. First, the SodsBC awVSS common-coin primitive, the consensus-layer randomness source that replaces quantum-vulnerable threshold signatures. Second, SodsMPC FSM-based zero-knowledge smart contracts, where the business logic itself stays private, not just the inputs. A worked example: Alice, Bob, and Carol each deposit one hundred dollars. A sealed auction runs on SodsBC. The seller receives sixty dollars. Nobody knows the bids, the business logic, or who won, only that the net transfer occurred. This is the growth vehicle beyond settlement: any regulated counterparty that needs to run contract code on shared infrastructure without exposing the code. On capital: we are seeking a lead investor. Silent co-investors have indicated they are ready to follow a lead, with names held per their preference until a lead is named. Banking introductions are active through Chalopin and partners, and SpaceBelt discussions continue on orbital deployment.",
+
+"Market, traction, and ask. Three converging markets, one post-quantum settlement layer. First, agentic commerce: Deloitte and Santander project thirty percent of global e-commerce, approximately seventeen-point-five trillion dollars in gross merchandise value, will be influenced by autonomous AI agents by 2030. US agentic commerce alone: three hundred to five hundred billion dollars per Bain, one hundred ninety to three hundred eighty-five billion per Morgan Stanley. Google AP2 and Mastercard Agent Pay ship on classical ECDSA today. Second, emerging markets banking: Africa's cross-border payments grow from three hundred twenty-nine billion to one trillion by 2035. PAPSS live across fifteen central banks. Seven hundred eighty-one million mobile money accounts. Asia-Pacific nine-point-one-six percent compound annual growth, the fastest region globally. Gulf to South Asia remittances one hundred forty-two billion dollars. Brazil Pix nine hundred eighty billion in 2025. All classical. Third, institutional settlement: two hundred thirty billion dollar revenue pool growing to two hundred eighty billion by 2030. JPMorgan Kinexys over seven billion dollars per day, all ECDSA. No shipped production post-quantum consensus layer exists today. Traction: IEEE TDSC 2024 peer-reviewed. US Patent pending US20230186293-A-1 covering both SodsBC awVSS coins and SodsMPC FSM zero-knowledge contracts. Live 4-node Oracle Cloud testnet, 163 QA tests passing, AWS scaling benchmarks in progress. The ask: three million dollars on NFX FAST terms, eighteen months runway at one hundred sixty-seven thousand dollars per month. Lead investor sought. Silent co-investors ready to follow. Private banking introductions active through Jean Chalopin, former Chairman of Deltec International Group, which was sold to Britannia Bank in 2025. SpaceBelt orbital proof-of-concept discussions continue. Team: Professor Shlomi Dolev, Ben-Gurion University, IEEE Fellow, four hundred-plus publications, MIT Press author, twenty-five years of cryptosystems research. Google and Cloudflare have set the clock. Major bank blockchains run on classical cryptography that Google has shown is increasingly at risk. SodsBC is the upgrade path. Visa-speed. Ethereum-compatible. Agent-ready. Already live. Thank you.",
+
+"References. Every quantitative claim in this deck is sourced from primary public materials: standards bodies, vendor disclosures, peer-reviewed publications, and government press releases. The 2029 post-quantum deadline is stated by Google and Cloudflare on their official blogs. The Dilithium standard is NIST FIPS 204. The algorithm deprecation timeline is NIST Special Publication 800-131A. The x402 Foundation launch was announced by the Linux Foundation in April 2026. SodsBC performance numbers are from the IEEE Transactions on Dependable and Secure Computing 2024 peer-reviewed publication. The JPMorgan Kinexys transaction volume is from JPMorgan's official Kinexys website. The cross-border payments revenue pool is from the Convera and Oxford Economics Fintech 2025+ report. The merged US patent application covering SodsBC awVSS coins and SodsMPC FSM contracts is US20230186293-A-1. The harvest-now-decrypt-later guidance is from NSA CNSA 2.0. The FiatBarter netting efficiency claim is anchored to CLS Bank's published ninety-six percent funding reduction on seven trillion dollars per day of FX settlement. URLs are provided on this slide for verification."
+];
+
+async function run(n){cur=n;showS(n);
+var fp=document.getElementById('f'+n);if(fp)fp.innerHTML='';
+speak(N[n]);
+if(n===0){await wv();nx();return}
+if(n===4){
+await sl(6000);
+af('f4','\u26A1','<strong>x402 POST</strong> <code>/market-data/premium/feed</code>');await sl(400);
+af('f4','\u26A1','Server: <code>402 Payment Required</code> &mdash; $0.001 USDC');await sl(350);
+af('f4','\uD83D\uDD12','Signed: <code>Dilithium-3</code> (not ECDSA)');await sl(400);
+af('f4','\u2699','SodsBC consensus: <code>MVBA &rarr; RBC &rarr; BBA-ACS</code>');await sl(400);
+af('f4','\u2705','<strong>&lt;0.8s</strong> finality &mdash; PQ-safe settlement');await sl(350);
+af('f4','\uD83C\uDF10','FiatBarter netting: <code>$8.4M gross &rarr; $500K net</code>');await sl(350);
+af('f4','\u2705','<strong>94&ndash;96% saved</strong> &mdash; matches CLS Bank [22]');await sl(300);
+af('f4','\uD83D\uDD12','Audit: Dilithium + SHA3 hash-chain &middot; SWIFT-compliant');
+}
+await wv();nx()}
+function wv(){return new Promise(function(r){var c=setInterval(function(){if(!synth.speaking){clearInterval(c);r()}},200)})}
+function nx(){if(au&&cur<S-1)setTimeout(function(){run(cur+1)},800);else{au=false;document.getElementById('ppb').classList.remove('on')}}
+function togglePlay(){if(au){au=false;synth.cancel();document.getElementById('ppb').classList.remove('on');document.getElementById('vi').classList.remove('on');return}au=true;document.getElementById('ppb').classList.add('on');run(0)}
+function toggleMute(){muted=!muted;document.getElementById('mmb').style.opacity=muted?'.4':'1';if(muted){synth.cancel();document.getElementById('vi').classList.remove('on')}}
+function jumpTo(n){au=false;synth.cancel();document.getElementById('ppb').classList.remove('on');document.getElementById('vi').classList.remove('on');run(n)}
+if(synth.onvoiceschanged!==undefined)synth.onvoiceschanged=function(){};
+</script>
+</body>
+</html>
